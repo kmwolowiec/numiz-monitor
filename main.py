@@ -4,6 +4,7 @@ import gspread
 import boto3
 from datetime import datetime
 import os
+from ast import literal_eval
 
 CRAWLING_SCOPE = [
         'https://kolekcjoner.nbp.pl/kategoria-produktu/monety-srebrne/',
@@ -50,7 +51,7 @@ def main():
             output.append(product_data)
             print(f'''{ts}, {name}, {url}, {price}\n''')
 
-    gc = gspread.service_account_from_dict(os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON'))
+    gc = gspread.service_account_from_dict(literal_eval(os.getenv('GOOGLE_SERVICE_ACCOUNT_JSON')))
     sh = gc.open_by_key(os.getenv('GSPREADSHEET_KEY'))
     wk = sh.sheet1
     rows = wk.get_values('D:D')  # get urls
