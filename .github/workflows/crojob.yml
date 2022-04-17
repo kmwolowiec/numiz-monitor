@@ -27,10 +27,11 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Run a multi-line script
+        env:
+          GSPREADSHEET_NAME: ${{ secrets.GSPREADSHEET_NAME }}
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip freeze
           python -c "import sys;import os;print(sys.version);print(os.getenv('GSPREADSHEET_NAME'))"
