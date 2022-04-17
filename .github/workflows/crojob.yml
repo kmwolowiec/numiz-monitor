@@ -33,4 +33,4 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip freeze
-          python -c "import sys;print(sys.version)"
+          python -c "import sys;import os;print(sys.version);print(os.getenv('GSPREADSHEET_NAME'))"
