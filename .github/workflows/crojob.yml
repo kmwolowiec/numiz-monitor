@@ -8,7 +8,7 @@ on:
   push:
     branches: [ main ]
   schedule:
-    - cron: "15,30,45 8-15 * * *"
+    - cron: "*/20 6-13 * * *" # UTC timezone!
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
