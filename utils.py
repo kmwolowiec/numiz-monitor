@@ -5,13 +5,15 @@ import boto3
 from datetime import datetime
 from ast import literal_eval
 from time import sleep
+from pytz import timezone
 import requests
 import random
+
 
 def crawl_kolekcjoner(urls):
     """Crawl through NBP"""
     output = []
-    ts = datetime.now().strftime('%x %X')
+    ts = datetime.now(timezone('Europe/Warsaw')).strftime('%x %X')
     sleep(random.randint(0, 10))
     for scope_url in urls:
         print(f'------ {scope_url} -------')
