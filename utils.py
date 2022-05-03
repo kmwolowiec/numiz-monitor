@@ -12,10 +12,9 @@ def crawl_kolekcjoner(urls):
     '''Crawl through NBP'''
     output = []
     ts = datetime.now().strftime('%x %X')
-    sleep(random.randint(0, 5 * 60))
+    sleep(random.randint(0, 10))
     for scope_url in urls:
         print(f'------ {scope_url} -------')
-        sleep(random.randint(0, 30))
         req = requests.get(scope_url)
         soup = BeautifulSoup(req.content, 'html.parser')
         divs = soup.find_all('div', 'box-text box-text-products')
