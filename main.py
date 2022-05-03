@@ -1,5 +1,6 @@
 import os
 from utils import crawl_kolekcjoner, get_google_sheet, obtain_new_items, send_sns_sms_notification
+from utils import compose_notification_text
 
 # config
 CRAWLING_SCOPE = [
@@ -21,8 +22,8 @@ def main():
 
     if new_items:
         print(f'There are {len(new_items)} products!')
-        for item in new_items:
-            send_sns_sms_notification(item, RECEIVER_PHONES)
+        message = compose_notification_text(new_items)
+        send_sns_sms_notification(message, RECEIVER_PHONES)
     else:
         print('There are not new items on NBP kolekcjoner')
     print('Updating spreadsheet')

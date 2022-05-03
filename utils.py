@@ -50,9 +50,28 @@ def obtain_new_items(new_snapshot, previous_snapshot):
     return new_items
 
 
-def send_sns_sms_notification(product, receiver_phones):
+def validate_keys(item):
+    key_schema = ['name', 'price', 'url']
+    for key in key_schema:
+        if key not in item.keys():
+            raise KeyError(f"'{key}' not found in product description.")
+
+
+def compose_notification_text(products):
+
+    if not products:
+        return ''
+    message = ''
+    header = 'NOWOŚĆ NA KOLEKCJONER NBP'
+    message += header
+    for product in products:
+        validate_keys(product)
+        message += f"\n{product['name']}\n{product['price']}\n{product['url']}\n"
+    return message
+
+
+def send_sns_sms_notification(message, receiver_phones):
     sns = boto3.client("sns")
-    message = f'''NOWY PRODUKT NA KOLEKCJONER NBP!!!\n{product['name']}\n{product['price']}\n{product['url']}'''
     for i, receiver in enumerate(receiver_phones):
         print(f'Sending message to {i}')
         print(message)
