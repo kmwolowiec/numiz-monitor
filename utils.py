@@ -9,7 +9,7 @@ import requests
 import random
 
 def crawl_kolekcjoner(urls):
-    '''Crawl through NBP'''
+    """Crawl through NBP"""
     output = []
     ts = datetime.now().strftime('%x %X')
     sleep(random.randint(0, 10))
@@ -75,10 +75,11 @@ def send_sns_sms_notification(message, receiver_phones):
     for i, receiver in enumerate(receiver_phones):
         print(f'Sending message to {i}')
         print(message)
-        sns.publish(
+        status = sns.publish(
             PhoneNumber=receiver,
             Message=message,
             MessageAttributes={'SenderID': {'StringValue': 'NumizMonit', 'DataType': 'String'}}
         )
+        print(status)
     print('Done')
 
