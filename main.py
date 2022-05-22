@@ -22,8 +22,8 @@ def main():
 
     if new_items:
         print(f'There are {len(new_items)} products!')
-        message = compose_notification_text(new_items)
-        send_sns_sms_notification(message, RECEIVER_PHONES)
+        messages = compose_notification_text(new_items)
+        send_sns_sms_notification(messages, RECEIVER_PHONES)
     else:
         print('There are not new items on NBP kolekcjoner')
     print('Updating spreadsheet')

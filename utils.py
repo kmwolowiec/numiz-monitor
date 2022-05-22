@@ -8,6 +8,9 @@ from time import sleep
 from pytz import timezone
 import requests
 import random
+import sys
+
+SMS_PUBLISH_BYTES_LIMIT = 1334
 
 
 def crawl_kolekcjoner(urls):
@@ -60,7 +63,7 @@ def validate_keys(item):
 
 
 def compose_notification_text(products):
-
+    messages = []
     if not products:
         return ''
     message = ''
@@ -68,20 +71,28 @@ def compose_notification_text(products):
     message += header
     for product in products:
         validate_keys(product)
-        message += f"\n{product['name']}\n{product['price']}\n{product['url']}\n"
-    return message
+        part = f"\n{product['name']}\n{product['price']}\n{product['url']}\n"
+        if sys.getsizeof(message) + sys.getsizeof(part) >= SMS_PUBLISH_BYTES_LIMIT:
+            messages.append(message)
+            message = ''
+        message += part
+    if message != '':
+        messages.append(message)
+    return messages
 
 
-def send_sns_sms_notification(message, receiver_phones):
+def send_sns_sms_notification(messages, receiver_phones):
     sns = boto3.client("sns")
+    print(f'Number of messages to send: {len(messages)}')
     for i, receiver in enumerate(receiver_phones):
-        print(f'Sending message to {i}')
-        print(message)
-        status = sns.publish(
-            PhoneNumber=receiver,
-            Message=message,
-            MessageAttributes={'SenderID': {'StringValue': 'NumizMonit', 'DataType': 'String'}}
-        )
-        print(status)
+        print(f'Sending messages to {i}')
+        for message in messages:
+            print(message)
+            status = sns.publish(
+                PhoneNumber=receiver,
+                Message=message,
+                MessageAttributes={'SenderID': {'StringValue': 'NumizMonit', 'DataType': 'String'}}
+            )
+            print(status)
     print('Done')
 
