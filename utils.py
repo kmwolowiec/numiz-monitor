@@ -9,15 +9,32 @@ from pytz import timezone
 import requests
 import random
 import sys
+from typing import List
+from dataclasses import dataclass
 
 SMS_PUBLISH_BYTES_LIMIT = 1334
 
 
-def crawl_kolekcjoner(urls):
-    """Crawl through NBP"""
-    output = []
+@dataclass
+class ScrapedItem:
+    """Base representation of numismatic product information."""
+    timestamp: str
+    source: str
+    name: str
+    url: str
+    price: str
+
+    def get_dict(self):
+        return self.__dict__
+
+
+def crawl_kolekcjoner(urls: List) -> List[ScrapedItem]:
+    """Crawl NBP and collect coins and banknotes information.
+    :param urls: scope for BeautifulSoup for scraping. Scrape items that are listed in these urls.
+    :return a list of numismatic items currently visible on the website."""
+    scraped_items = []
     ts = datetime.now(timezone('Europe/Warsaw')).strftime('%x %X')
-    sleep(random.randint(0, 10))
+    sleep(random.randint(0, 10))  # silly method of preventing being detected as a scraper
     for scope_url in urls:
         print(f'------ {scope_url} -------')
         req = requests.get(scope_url)
@@ -28,60 +45,77 @@ def crawl_kolekcjoner(urls):
             name = div.find('a', 'woocommerce-LoopProduct-link').text
             url = div.find('a', 'woocommerce-LoopProduct-link').get('href')
             price = div.find('span', 'woocommerce-Price-amount amount').text
-            product_data = {
-                'timestamp': ts,
-                'source': scope_url.split('/')[-2],
-                'name': name,
-                'url': url,
-                'price': price
-            }
-            output.append(product_data)
-            print(f'''{ts}, {name}, {url}, {price}\n''')
-    return output
+            source = scope_url.split('/')[-2]  # coins or banknotes
+            item = ScrapedItem(timestamp=ts, source=source, name=name, url=url, price=price)
+            scraped_items.append(item)
+            print(f'''{item.timestamp}, {item.name}, {item.url}, {item.price}\n''')
+    return scraped_items
 
 
-def get_google_sheet(gsheet_key, service_account_json_string):
-    gc = gspread.service_account_from_dict(literal_eval(service_account_json_string))
-    sh = gc.open_by_key(gsheet_key)
-    wk = sh.sheet1
-    return wk
+def get_google_spreadsheet(spreadsheet_key: str, service_account_json_string: str) -> gspread.spreadsheet.Spreadsheet:
+    """Get google spreadsheet it's key ans using provided service account credentials.
+
+    :param spreadsheet_key: part of URL standing for a spreadsheet
+    :param service_account_json_string: json service account credentials converted to string
+    :return spreadsheet object"""
+    service_account_json = literal_eval(service_account_json_string)  # Convert json string to a dictionary
+    gc = gspread.service_account_from_dict(service_account_json)
+    spreadsheet = gc.open_by_key(spreadsheet_key)
+    return spreadsheet
 
 
-def obtain_new_items(new_snapshot, previous_snapshot):
+def obtain_new_items(new_snapshot: List[ScrapedItem], previous_snapshot: List[str], ignored_items: List[str]) -> List[ScrapedItem]:
+    """Compare new scraping snapshot and a previous one in order to identify the items incremental.
+    Don't keep items existing in ignored items list. The list contains constantly disappearing and returning products.
+    Such products are problematic because they trigger many notifications causing spam.
+
+    :param new_snapshot: a list of items that are suppose to appear on the website the first time or
+        returned to the website. These items are going to be checked against `previous_snapshot` and `ignored_items`
+    :param previous_snapshot: Reference for `new_snapshot`. List of item urls from previous snapshot.
+    :param ignored_items: List of item urls that returns to the website frequently.
+        Some items constantly disappear and get back to the website what cause notification spamming."""
+
     new_items = []
     for item in new_snapshot:
-        if item['url'] not in previous_snapshot:
+        if item.url not in previous_snapshot and item.url not in ignored_items:
             new_items.append(item)
     return new_items
 
 
-def validate_keys(item):
-    key_schema = ['name', 'price', 'url']
-    for key in key_schema:
-        if key not in item.keys():
-            raise KeyError(f"'{key}' not found in product description.")
+def compose_notification_text(new_items: List[ScrapedItem], header: str) -> List[str]:
+    """Create notification text to be sent using SNS SMS.
+    The notification schema:
+    <HEADER>
+    <NAME>
+    <PRICE>
+    <URL>
 
-
-def compose_notification_text(products):
+    :param new_items: item information that is going to be included in notification text
+    :param header: a notification header appearing at the beginning of the notification
+    :return: list of notifications; each notification have to be sent separately
+    """
     messages = []
-    if not products:
-        return ''
     message = ''
-    header = 'NOWOŚĆ NA KOLEKCJONER NBP'
+
+    # Add header to the first message:
     message += header
-    for product in products:
-        validate_keys(product)
-        part = f"\n{product['name']}\n{product['price']}\n{product['url']}\n"
-        if sys.getsizeof(message) + sys.getsizeof(part) >= SMS_PUBLISH_BYTES_LIMIT:
+    for item in new_items:
+        new_item_desc = f"\n{item.name}\n{item.price}\n{item.url}\n"
+
+        # Don't let the message size exceed the max size of SMS publish bytes limit set for AWS SNS:
+        # If the size is exceeded, the message is not delivered.
+        # The workaround is to split the notification text into multiple parts and send multiple messages.
+        if sys.getsizeof(message) + sys.getsizeof(new_item_desc) >= SMS_PUBLISH_BYTES_LIMIT:
             messages.append(message)
             message = ''
-        message += part
+        message += new_item_desc
     if message != '':
         messages.append(message)
     return messages
 
 
-def send_sns_sms_notification(messages, receiver_phones):
+def send_sns_sms_notification(messages: List[str], receiver_phones: List) -> None:
+    """Connect to AWS SNS service and send `messages` to receivers (`receiver_phones`)."""
     sns = boto3.client("sns")
     print(f'Number of messages to send: {len(messages)}')
     for i, receiver in enumerate(receiver_phones):
