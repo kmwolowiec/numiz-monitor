@@ -1,0 +1,19 @@
+jobs:
+
+  buildImage:
+
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build ContainerImage
+        run: docker build . --file Dockerfile --tag numiz-monitor-container
+
+      - name: Log into GitHub Container Registry
+        run: echo "${{ secrets.GH_PAT }}" | docker login https://ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Push image to Github Container Registry
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/numiz-monitor-container:${{ github.run_id }}
+          docker push $IMAGE_ID
