@@ -36,19 +36,25 @@ def crawl_kolekcjoner(urls: List) -> List[ScrapedItem]:
     ts = datetime.now(timezone('Europe/Warsaw')).strftime('%x %X')
     sleep(random.randint(0, 10))  # silly method of preventing being detected as a scraper
     for scope_url in urls:
-        print(f'------ {scope_url} -------')
-        req = requests.get(scope_url)
-        soup = BeautifulSoup(req.content, 'html.parser')
-        divs = soup.find_all('div', 'box-text box-text-products')
+        while True:
+            print(f'------ {scope_url} -------')
+            req = requests.get(scope_url)
+            soup = BeautifulSoup(req.content, 'html.parser')
+            divs = soup.find_all('div', 'box-text box-text-products')
 
-        for div in divs:
-            name = div.find('a', 'woocommerce-LoopProduct-link').text
-            url = div.find('a', 'woocommerce-LoopProduct-link').get('href')
-            price = div.find('span', 'woocommerce-Price-amount amount').text
-            source = scope_url.split('/')[-2]  # coins or banknotes
-            item = ScrapedItem(timestamp=ts, source=source, name=name, url=url, price=price)
-            scraped_items.append(item)
-            print(f'''{item.timestamp}, {item.name}, {item.url}, {item.price}\n''')
+            for div in divs:
+                name = div.find('a', 'woocommerce-LoopProduct-link').text
+                url = div.find('a', 'woocommerce-LoopProduct-link').get('href')
+                price = div.find('span', 'woocommerce-Price-amount amount').text
+                source = scope_url.split('/')[4]  # coins or banknotes
+                item = ScrapedItem(timestamp=ts, source=source, name=name, url=url, price=price)
+                scraped_items.append(item)
+                print(f'''{item.timestamp}, {item.name}, {item.url}, {item.price}\n''')
+            next_page = soup.find('a', 'next page-number')
+            if next_page:
+                scope_url = next_page.get('href')
+            else:
+                break
     return scraped_items
 
 
