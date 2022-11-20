@@ -34,7 +34,7 @@ def crawl_kolekcjoner(urls: List) -> List[ScrapedItem]:
     :return a list of numismatic items currently visible on the website."""
     scraped_items = []
     ts = datetime.now(timezone('Europe/Warsaw')).strftime('%x %X')
-    sleep(random.randint(0, 10))  # silly method of preventing being detected as a scraper
+    sleep(random.randint(0, 5))  # silly method of preventing being detected as a scraper
     for scope_url in urls:
         while True:
             print(f'------ {scope_url} -------')
@@ -120,19 +120,21 @@ def compose_notification_text(new_items: List[ScrapedItem], header: str) -> List
     return messages
 
 
-def send_sns_sms_notification(messages: List[str], receiver_phones: List) -> None:
+def send_sms_notification(messages: List[str], receiver_phones: List[str], sms_client=boto3.client('sns')) -> List:
     """Connect to AWS SNS service and send `messages` to receivers (`receiver_phones`)."""
-    sns = boto3.client("sns")
     print(f'Number of messages to send: {len(messages)}')
+    statuses = []
     for i, receiver in enumerate(receiver_phones):
         print(f'Sending messages to {i}')
         for message in messages:
             print(message)
-            status = sns.publish(
+            status = sms_client.publish(
                 PhoneNumber=receiver,
                 Message=message,
                 MessageAttributes={'SenderID': {'StringValue': 'NumizMonit', 'DataType': 'String'}}
             )
+            statuses.append(status)
             print(status)
     print('Done')
+    return statuses
 
