@@ -4,8 +4,8 @@ from utils import compose_notification_text
 
 # config
 SCOPE = [
-        'https://kolekcjoner.nbp.pl/kategoria-produktu/monety-srebrne/',
-        'https://kolekcjoner.nbp.pl/kategoria-produktu/nbp-banknoty-kolekcjonerskie/'
+        'https://kolekcjoner.nbp.pl/kategoria-produktu/monety-srebrne',
+        'https://kolekcjoner.nbp.pl/kategoria-produktu/nbp-banknoty-kolekcjonerskie'
         ]
 RECEIVER_PHONES = os.getenv('RECEIVER_PHONES').split(';')
 GSPREADSHEET_KEY = os.getenv('GSPREADSHEET_KEY')
