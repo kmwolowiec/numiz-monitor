@@ -11,6 +11,11 @@ import random
 import sys
 from typing import List
 from dataclasses import dataclass
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(levelname)s %(asctime)s %(name)-2s %(message)s',
+                    datefmt='%y-%m-%d %H:%M:%S')
 
 SMS_PUBLISH_BYTES_LIMIT = 1334
 
@@ -37,7 +42,7 @@ def crawl_kolekcjoner(urls: List) -> List[ScrapedItem]:
     sleep(random.randint(0, 5))  # silly method of preventing being detected as a scraper
     for scope_url in urls:
         while True:
-            print(f'------ {scope_url} -------')
+            logging.info(f'------ {scope_url} -------')
             req = requests.get(scope_url)
             soup = BeautifulSoup(req.content, 'html.parser')
             divs = soup.find_all('div', 'box-text box-text-products')
@@ -49,12 +54,13 @@ def crawl_kolekcjoner(urls: List) -> List[ScrapedItem]:
                 source = scope_url.split('/')[4]  # coins or banknotes
                 item = ScrapedItem(timestamp=ts, source=source, name=name, url=url, price=price)
                 scraped_items.append(item)
-                print(f'''{item.timestamp}, {item.name}, {item.url}, {item.price}\n''')
+                logging.info(f'''{item.timestamp}, {item.name}, {item.url}, {item.price}\n''')
             next_page = soup.find('a', 'next page-number')
             if next_page:
                 scope_url = next_page.get('href')
             else:
                 break
+    logging.info(f'Obtained {len(scraped_items)} items.')
     return scraped_items
 
 
@@ -122,19 +128,19 @@ def compose_notification_text(new_items: List[ScrapedItem], header: str) -> List
 
 def send_sms_notification(messages: List[str], receiver_phones: List[str], sms_client=boto3.client('sns')) -> List:
     """Connect to AWS SNS service and send `messages` to receivers (`receiver_phones`)."""
-    print(f'Number of messages to send: {len(messages)}')
+    logging.info(f'Number of messages to send: {len(messages)}')
     statuses = []
     for i, receiver in enumerate(receiver_phones):
-        print(f'Sending messages to {i}')
+        logging.info(f'Sending messages to {i}')
         for message in messages:
-            print(message)
+            logging.info(message)
             status = sms_client.publish(
                 PhoneNumber=receiver,
                 Message=message,
                 MessageAttributes={'SenderID': {'StringValue': 'NumizMonit', 'DataType': 'String'}}
             )
             statuses.append(status)
-            print(status)
-    print('Done')
+            logging.info(status)
+    logging.info('Done')
     return statuses
 
