@@ -12,6 +12,7 @@ import sys
 from typing import List
 from dataclasses import dataclass
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO,
                     format='%(levelname)s %(asctime)s %(name)-2s %(message)s',
@@ -43,8 +44,24 @@ def crawl_kolekcjoner(urls: List) -> List[ScrapedItem]:
     for scope_url in urls:
         while True:
             logging.info(f'------ {scope_url} -------')
-            req = requests.get(scope_url)
-            soup = BeautifulSoup(req.content, 'html.parser')
+            for i in range(5):
+
+                res = requests.get(
+                    url=os.getenv('SERVICE_URL'),
+                    params={
+                        'api_key': os.getenv('API_KEY'),
+                        'url': scope_url,
+                        'residential': 'True',
+                        'country': 'pl'
+                    }
+                )
+
+                logging.info(f'Status code: {res.status_code}')
+                if res.ok:
+                    break
+                sleep(random.randint(0, 5))
+
+            soup = BeautifulSoup(res.content, 'html.parser')
             divs = soup.find_all('div', 'box-text box-text-products')
 
             for div in divs:

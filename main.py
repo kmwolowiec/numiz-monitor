@@ -31,7 +31,7 @@ def main():
     new_items = obtain_new_items(items_snapshot, prev_item_urls, ignored_item_urls)
     if new_items:
         new_items_count = len(new_items)
-        logging.info(f'There are {new_items_count} products!')
+        logging.info(f'There are {new_items_count} new products!')
         if len(new_items) <= ALLOWED_NEW_ITEMS_LIMIT:
             messages = compose_notification_text(new_items, NOTIFICATION_HEADER)
             _ = send_sms_notification(messages, RECEIVER_PHONES)
