@@ -45,17 +45,7 @@ def crawl_kolekcjoner(urls: List) -> List[ScrapedItem]:
         while True:
             logging.info(f'------ {scope_url} -------')
             for i in range(5):
-
-                res = requests.get(
-                    url=os.getenv('SERVICE_URL'),
-                    params={
-                        'api_key': os.getenv('API_KEY'),
-                        'url': scope_url,
-                        'residential': 'True',
-                        'country': 'pl'
-                    }
-                )
-
+                res = requests.get(url=scope_url)
                 logging.info(f'Status code: {res.status_code}')
                 if res.ok:
                     break
@@ -81,13 +71,12 @@ def crawl_kolekcjoner(urls: List) -> List[ScrapedItem]:
     return scraped_items
 
 
-def get_google_spreadsheet(spreadsheet_key: str, service_account_json_string: str) -> gspread.spreadsheet.Spreadsheet:
+def get_google_spreadsheet(spreadsheet_key: str, service_account_json: dict) -> gspread.spreadsheet.Spreadsheet:
     """Get google spreadsheet it's key ans using provided service account credentials.
 
     :param spreadsheet_key: part of URL standing for a spreadsheet
-    :param service_account_json_string: json service account credentials converted to string
+    :param service_account_json: json service account credentials
     :return spreadsheet object"""
-    service_account_json = literal_eval(service_account_json_string)  # Convert json string to a dictionary
     gc = gspread.service_account_from_dict(service_account_json)
     spreadsheet = gc.open_by_key(spreadsheet_key)
     return spreadsheet
@@ -161,3 +150,18 @@ def send_sms_notification(messages: List[str], receiver_phones: List[str], sms_c
     logging.info('Done')
     return statuses
 
+
+def generate_google_api_credentials():
+    credentials = {
+        "type": "service_account",
+        "project_id": os.getenv('GOOGLE_PROJECT_ID'),
+        "private_key_id": os.getenv('GOOGLE_PRIVATE_KEY_ID'),
+        "private_key": os.getenv('GOOGLE_PRIVATE_KEY'),
+        "client_email": os.getenv('GOOGLE_CLIENT_EMAIL'),
+        "client_id": os.getenv('GOOGLE_CLIENT_ID'),
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": os.getenv('GOOGLE_CLIENT_X509_CERT_URL')
+    }
+    return credentials

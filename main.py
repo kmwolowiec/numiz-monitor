@@ -1,6 +1,6 @@
 import os
 from utils import crawl_kolekcjoner, get_google_spreadsheet, obtain_new_items, send_sms_notification
-from utils import compose_notification_text
+from utils import compose_notification_text, generate_google_api_credentials
 import logging
 
 logging.basicConfig(level=logging.INFO,
@@ -23,7 +23,7 @@ ALLOWED_NEW_ITEMS_LIMIT = 5
 
 def main():
     items_snapshot = crawl_kolekcjoner(SCOPE)
-    spreadsheet = get_google_spreadsheet(GSPREADSHEET_KEY, GOOGLE_SERVICE_ACCOUNT_JSON)
+    spreadsheet = get_google_spreadsheet(GSPREADSHEET_KEY, generate_google_api_credentials())
     ws_snapshots = spreadsheet.worksheet(WORKSHEET_NAME_SNAPSHOTS)
 
     ignored_item_urls = spreadsheet.worksheet(WORKSHEET_NAME_IGNORED_ITEMS).col_values(1)
